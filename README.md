@@ -108,7 +108,7 @@ For bugs:
 
 `[Bug] Brief bug description`
 
-Try to provide as much information as you can gather in your bug and feature descriptions.
+Try to provide as much information as you can gather in your bug and feature reports (not the brief title description).
 
 # License
 
