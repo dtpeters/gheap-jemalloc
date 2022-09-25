@@ -55,6 +55,18 @@ The goal of this project is to provide a consitent interface to
 inspecting, testing and debugging of the heap for applications
 using the _linux jemalloc standalone_ binary.
 
+The ultimate goal is to provide a top-notch state-of-the-art debugging
+exprience and tools to aid in heap debugging. Many bugs
+go simply unnoticed because there simply isnt a good way
+to visualize or inspect the heap of a running application
+during development.
+
+The `pwndbg` project provides a great experience in aiding of debugging
+heap related bugs.
+
+Once `gheap-jemalloc` is considered **feature complete** I will move on
+to implementing something simmilar for glibc as well.
+
 ### Versions
 
 There are quite a few versions of jemalloc so this project provides
