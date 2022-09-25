@@ -3,8 +3,15 @@
 
 gheap-jemalloc is a jemalloc plugin for gdb
 
-## Usage
+## Prerquisites / Dependencies
 
+gheap-jemalloc requires that `gdb` be compiled with *guile* support
+and also that *jemalloc* be compiled with debugging symbols.
+(or at least, _not stripped_ of symbols)
+
+## Usage / Installation
+
+First clone the repository and then  
 Start gdb with the -x flag with the path to the .scm file.
 
 ```
@@ -26,7 +33,6 @@ source /path/to/repo/gheap-jemalloc.scm
 ```
 
 where `/path/to/repo` is the path to the cloned git repository
-
 
 ## About
 
