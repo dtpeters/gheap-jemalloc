@@ -3,6 +3,12 @@
 
 gheap-jemalloc is a jemalloc plugin for gdb
 
+## About
+
+gheap-jemalloc was/is being developed to aid in the debugging of heap
+related bugs in applications using jemalloc for linux, and also
+to aid in CTF challenges that focus on heap and jemalloc.
+
 ## Prerquisites / Dependencies
 
 gheap-jemalloc requires that `gdb` be compiled with *guile* support
@@ -33,11 +39,6 @@ source /path/to/repo/gheap-jemalloc.scm
 ```
 
 where `/path/to/repo` is the path to the cloned git repository
-
-## About
-
-gheap-jemalloc was/is being developed to aid in the debugging of heap
-related bugs in applications using jemalloc for linux.
 
 ### Reasoning
 

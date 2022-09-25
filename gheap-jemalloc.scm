@@ -1,9 +1,11 @@
 ; -----
 ; This file is part of gheap-jemalloc and is lincensed under the gplv3+ license
+; See the COPYING file for details
 ;
 ; GDB jemalloc-5.3.0 Plugin for the standalone jemalloc for gnu/linux
 ; Version: 1.0.0
 ; License: GPLv3
+; Author: Ernest Deak
 ;
 ;   ,
 ;  -+-
