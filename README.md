@@ -91,4 +91,4 @@ But Windows, FreeBSD and MacOS support might be added in the future.
 # License
 
 This software is licensed under the GNU GPL version 3+ license. See COPYING
-for more information.
+file for more information.
