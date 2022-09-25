@@ -88,7 +88,7 @@ This wont change so don't even ask. Python related pull-request will be rejected
 As an added bonus, guile is GNU software, so I think it fits better into the _Free Software_
 ecosystem than `python` which is MIT licensed.
 
-## Requests, suggestions and features
+## Requests, suggestions, features and bugs
 
 gheap-jemalloc provides mostly just basic features for inspecting the heap.
 In case you'd like support to be added for other jemalloc versions, open
@@ -99,6 +99,16 @@ an issue of the format
 Where X.Y.Z is the version you'd like supported. and `Linux standalone` is
 the OS flavor. Right now though, only the linux standalone versions are considered.
 But Windows, FreeBSD and MacOS support might be added in the future.
+
+For feature requests, open an issue of the format
+
+`[Feature request] Brief text describing the feature`
+
+For bugs:
+
+`[Bug] Brief bug description`
+
+Try to provide as much information as you can gather in your bug and feature descriptions.
 
 # License
 
