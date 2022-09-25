@@ -3,7 +3,7 @@
 ; Version: 1.0.0
 ; License: GPLv3
 ; ----
-(use-modules (gdb) (ice-9 format))
+(use-modules (gdb) (ice-9 format) (oop goops))
 (define println (lambda (str) (format "~a~%" str)))
 ;(define root_node (parse-and-eval "root_node"))
 ;(define a0 (parse-and-eval "a0"))
@@ -16,7 +16,15 @@
 
 ; ==== symbol related ========================================
 ;setup for future symbol changes
-(define SYM_arena "a0")
+
+(define-class <jemalloc-symbols-5.3.0> ()
+			  arena
+			  slabcur
+			  nbins
+			  narenas)
+(define jemalloc-syms (make <jemalloc-symbols-5.3.0> #:arena "a0"))
+
+(define SYM_arena (slot-ref jemalloc-syms 'arena))
 (define SYM_arena_bin "bins")
 (define SYM_slabcur "slabcur")
 (define arena-bins (format #f "~a.~a" SYM_arena SYM_arena_bin))
