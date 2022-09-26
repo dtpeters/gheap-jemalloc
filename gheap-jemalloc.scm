@@ -13,7 +13,7 @@
 ; -----
 (use-modules (gdb) (ice-9 format) (oop goops))
 
-(define println (lambda (str) (format "~a~%" str)))
+(define println (lambda (str) (format #t "~a~%" str)))
 (define neat-print (lambda (ls)
                      (println (string-join ls))))
 (define neat-eval (lambda (expression)
@@ -29,7 +29,11 @@
 (define get-jemalloc-version (lambda () "5.3.0")) ; hardcoded for now. will be replaced by some function that checks for the version
 
 ; === jemalloc's edata structure === {{{
-(define-class <edata-5.3.0> ()
+(define-class <edata-generic> ()
+              (e_addr #:init-value "ERROR")
+              (e_bits #:init-value "ERROR"))
+
+(define-class <edata-5.3.0> (<edata-generic>)
               (e_addr #:init-value "e_addr")
               (e_bits #:init-value "e_bits"))
 
@@ -74,6 +78,18 @@
   (lambda (b)
     (bit-extract b 38 44)))
 
+(define-class <edata-bitfield-struct> ()
+              (arena_ind)
+              (slab)
+              (commited)
+              (pai)
+              (zeroed)
+              (guarded)
+              (state)
+              (szind)
+              (nfree)
+              (bin_shard))
+
 ; --------------------------------------------------------------------------------------------------------------------------------------------
 ; indexes of individual bits for e_bits bitfield because it was kind of hard to keep track of just in my head
 ; explanation of these letters can be found in jemalloc's source: jemalloc-5.3.0/include/jemalloc/internal/edata.h
@@ -93,6 +109,9 @@
     (cond
       (#nil (make <edata-5.3.0>))
       ((equal? v "5.3.0") (make <edata-5.3.0>)))))
+
+(define-method (edata_t-sym (edata <edata-generic>) (sym <symbol>))
+               (slot-ref edata sym))
 
 (define edata_s (get-edata-for-version (get-jemalloc-version)))
 
@@ -127,6 +146,8 @@
 (define SYM_nbins_total (je-sym je 'nbins))
 (define SYM_narenas_total (je-sym je 'narenas))
 
+(define SYM_edata_t "edata_t")
+
 (define bin_struct_size_bytes 224)
 (define bin_struct_size_qwords 28)
 ;}}}
@@ -157,8 +178,40 @@
                                          (format #f "~a" e))
                                        ) ls))))
 
+(define slab-field-ref
+  (lambda (slabaddr field_str) ; slabaddr is expected to be just an integer or hex number representing an address, field_str is just the field as a string
+    (let ((slabfmt (format #f "((~a *) ~a)" SYM_edata_t slabaddr)))
+      (parse-and-eval (format #f "~a.~a" slabfmt field_str)))))
+
+(define DEBUG #t)
+
+(define dbg
+  (lambda (str form)
+    (if (eq? DEBUG #t)
+      (begin (format #t "~a~%" str) (form))
+      (form))))
+
+(define-syntax slabfield
+  (syntax-rules (-> as)
+    ((slabfield slabaddr -> fieldname as vprinttype)
+     (vprinttype (slab-field-ref slabaddr fieldname)))
+    ))
+
 (define show-slab-info
   (lambda (slabaddr)
+    (format #t "     `-> e_addr: ~a ~%" (slabfield slabaddr -> "e_addr" as value-print))
+    (format #t "     `-> e_bits: 0x~x ~%" (slabfield slabaddr -> "e_bits" as value->integer))
+    (format #t "         | ~30a: 0x~x ~%" "ARENA INDEX" (e_bits-arena_ind (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         | ~30a: 0x~x ~%" "SLAB" (e_bits-slab (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         | ~30a: 0x~x ~%" "COMMITED" (e_bits-commited (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         | ~30a: 0x~x ~%" "PAI" (e_bits-pai (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         | ~30a: 0x~x ~%" "ZEROED" (e_bits-zeroed (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         | ~30a: 0x~x ~%" "GUARDED" (e_bits-guarded (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         | ~30a: 0x~x ~%" "STATE" (e_bits-state (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         | ~30a: ~d ~%" "USABLE SIZE CLASS INDEX" (e_bits-szind (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         | ~30a: ~d ~%" "FREE REGIONS IN SLAB" (e_bits-nfree (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         | ~30a: 0x~x ~%" "BIN SHARD" (e_bits-bin_shard (slabfield slabaddr -> "e_bits" as value->integer)))
+    (format #t "         `----------------------------------- ~%")
     ))
 
 (define show-all-slabs (lambda (x)
@@ -168,21 +221,7 @@
                              (format #t " `-> slabcur: ~a ~%" (value-print (arena-bins-field-at x SYM_slabcur)))
                              (let ((slabaddr (parse-and-eval (format #f "a0.bins[~a].slabcur" x))))
                                (if (not (= (value->integer slabaddr) 0))
-                                 (begin
-                                   (format #t "     `-> e_addr: ~a ~%" (value-print (arena-bins-slab-field-at x "e_addr")))
-                                   (format #t "     `-> e_bits: 0x~x ~%" (value->integer (arena-bins-slab-field-at x "e_bits")))
-                                   (format #t "         | ~30a: 0x~x ~%" "ARENA INDEX" (e_bits-arena_ind (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         | ~30a: 0x~x ~%" "SLAB" (e_bits-slab (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         | ~30a: 0x~x ~%" "COMMITED" (e_bits-commited (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         | ~30a: 0x~x ~%" "PAI" (e_bits-pai (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         | ~30a: 0x~x ~%" "ZEROED" (e_bits-zeroed (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         | ~30a: 0x~x ~%" "GUARDED" (e_bits-guarded (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         | ~30a: 0x~x ~%" "STATE" (e_bits-state (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         | ~30a: ~d ~%" "USABLE SIZE CLASS INDEX" (e_bits-szind (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         | ~30a: ~d ~%" "FREE REGIONS IN SLAB" (e_bits-nfree (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         | ~30a: 0x~x ~%" "BIN SHARD" (e_bits-bin_shard (value->integer (arena-bins-slab-field-at x "e_bits"))))
-                                   (format #t "         `----------------------------------- ~%")
-                                   )
+                                 (show-slab-info slabaddr)
                                  ))
                              (show-all-slabs (+ x 1))))))
 
@@ -197,18 +236,16 @@
   (register-command! newcmd))
 (register-command! (make-command "jeslabs" 
                                  #:command-class COMMAND_OBSCURE 
-                                 #:doc "Display all slabs(runs) currently defined in the arena"
+                                 #:doc "Display all slabs(runs) currently defined in the arena with their information"
                                  #:invoke (lambda (self arg from-tty) (show-all-slabs 0))))
+
 (register-command! (make-command "jeslab"
                                  #:command-class COMMAND_OBSCURE
                                  #:doc "Show information about a slab"
                                  #:invoke (lambda (self arg from-tty)
-                                            (arena-slab-info (array-ref arg 0)))))
+                                            (show-slab-info arg))))
+
 (register-command! (make-command "je_narenas_total" #:command-class COMMAND_OBSCURE #:invoke (lambda (self arg tty) (println (narenas_total)))))
 (register-command! (make-command "je_nbins_total" #:command-class COMMAND_OBSCURE #:invoke (lambda (self arg tty) (println (nbins_total)))))
-(register-command! (make-command "jeprogspace"
-                                 #:command-class COMMAND_OBSCURE
-                                 #:doc "Print the current program space"
-                                 #:invoke (lambda (self arg tty)
-                                            (format #t "~a~%" (value-print (progspaces))))))
+
 ;}}}

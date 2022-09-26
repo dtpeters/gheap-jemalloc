@@ -114,3 +114,7 @@ Try to provide as much information as you can gather in your bug and feature rep
 
 This software is licensed under the GNU GPL version 3+ license. See COPYING
 file for more information.
+
+# Example screenshot
+
+![screenshot](./example.gif)
