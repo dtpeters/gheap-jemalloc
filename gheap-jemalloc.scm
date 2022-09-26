@@ -230,7 +230,7 @@
                             #:command-class COMMAND_OBSCURE
                             #:doc "Show the jemalloc arena struct + address"
                             #:invoke (lambda (self arg from-tty)
-                                       (execute (format #f "p -object on -array on -pretty on -- *~a" arena-bins))
+                                       (execute (format #f "p -object on -array on -pretty on -- *~a" SYM_arena))
                                        (neat-print (list SYM_arena ": " (neat-eval SYM_arena) )))
                             )))
   (register-command! newcmd))
